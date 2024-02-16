@@ -134,18 +134,26 @@ namespace Book_Demo.Controllers
         public IActionResult PartiallyUpdateOneBook([FromRoute(Name = "id")] int id,
             [FromBody] JsonPatchDocument<Book> bookPatch)
         {
-            //check entity
-            var entity = _manager
-                .Book
-                .GetOneBookById(id, true);
+            try
+            {
+                //check entity
+                var entity = _manager
+                    .Book
+                    .GetOneBookById(id, true);
 
-            if(entity is null)
-                return NotFound(); //404
+                if (entity is null)
+                    return NotFound(); //404
 
-            bookPatch.ApplyTo(entity);
-            _manager.Save();
+                bookPatch.ApplyTo(entity);
+                _manager.Book.Update(entity);
 
-            return NoContent(); //204
+                return NoContent(); //204
+            }
+            catch(Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+            
         }
     }
 }

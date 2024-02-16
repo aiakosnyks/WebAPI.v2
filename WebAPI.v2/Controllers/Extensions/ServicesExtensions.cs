@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Repositories.Contracts;
 using Repositories.EF_Core;
 
 namespace Book_Demo.Controllers.Extensions
@@ -10,5 +11,8 @@ namespace Book_Demo.Controllers.Extensions
             IConfiguration configuration) => services.AddDbContext<RepositoryContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("sqlConnection")));
                 //bu bir extension metod
+
+        public static void ConfigureRepositoryManager(this IServiceCollection services) =>
+            services.AddScoped<IRepositoryManager>
     }
 }
