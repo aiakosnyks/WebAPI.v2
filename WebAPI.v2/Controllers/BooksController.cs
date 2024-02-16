@@ -5,6 +5,7 @@ using System.Security.Cryptography.X509Certificates;
 using Microsoft.AspNetCore.JsonPatch;
 using Entities.Models;
 using Repositories.EF_Core;
+using Repositories.Contracts;
 
 namespace Book_Demo.Controllers
 {
@@ -12,10 +13,10 @@ namespace Book_Demo.Controllers
     [ApiController]
     public class BooksController : ControllerBase
     {
-        private readonly RepositoryContext _context;
-        public BooksController(RepositoryContext context)
+        private readonly IRepositoryManager _manager;
+        public BooksController(IRepositoryManager manager)
         {
-            _context = context;
+            _manager = manager;
         }
 
         [HttpGet]
@@ -23,7 +24,7 @@ namespace Book_Demo.Controllers
         {
             try
             {
-                var books = _context.Books.ToList();
+                var books = _manager.Book.GetAllBooks(false);
                 return Ok(books);
             }
             catch(Exception ex)
@@ -38,10 +39,9 @@ namespace Book_Demo.Controllers
         {
             try
             {
-               var book = _context
-              .Books
-              .Where(x => x.Id.Equals(id))
-              .SingleOrDefault();
+                var book = _manager
+               .Book
+               .GetOneBookById(id, false);
 
                 if (book is null)
                     return NotFound(); //404
@@ -64,7 +64,9 @@ namespace Book_Demo.Controllers
                     return BadRequest(); //400
                 }
 
-                _context.Books.Add(book);
+                _manager.Book.CreateOneBook(book);
+                _manager.Save();
+
                 return StatusCode(201, book);
             }
             catch (Exception ex)
@@ -77,25 +79,33 @@ namespace Book_Demo.Controllers
         public IActionResult UpdateOneBook([FromRoute(Name = "id")]int id, 
         [FromBody] Book book)
         {
-            //check book ? test
-            var entity = _context
-                .Books
-                .Where(b => b.Id.Equals(id))
-                .SingleOrDefault();
-
-            if(entity is null)
+            try
             {
-                return NotFound(); //404
-            }
-            
-            //check id
-            if(id!=book.Id)
-                return BadRequest(); //400
+                //check book ? test
+                var entity = _manager
+                    .Book
+                    .GetOneBookById(id, true);
 
-            _context.Books.Remove(entity); 
-            book.Id = entity.Id;
-            _context.Books.Add(book);
-            return Ok(book);
+                if (entity is null)
+                {
+                    return NotFound(); //404
+                }
+
+                //check id
+                if (id != book.Id)
+                    return BadRequest(); //400
+
+                entity.Title = book.Title;
+                entity.Price = book.Price;
+
+                _manager.Save();
+
+                return Ok(book);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
 
         }
 
@@ -103,10 +113,9 @@ namespace Book_Demo.Controllers
         public IActionResult DeleteOneBook([FromRoute(Name ="id")]int id)
         {
 
-            var entity = _context
-                .Books
-                .Where(c => c.Id.Equals(id))
-                .SingleOrDefault();
+            var entity = _manager
+                .Book
+                .GetOneBookById(id, false);
 
             if (entity is null)
                 return NotFound(new
@@ -115,7 +124,9 @@ namespace Book_Demo.Controllers
                     message = $"Book with id:{id} could not found."
                 }); //404
 
-            _context.Books.Remove(entity); 
+            _manager.Book.DeleteOneBook(entity);
+            _manager.Save();
+
             return NoContent();
         }
 
@@ -124,11 +135,15 @@ namespace Book_Demo.Controllers
             [FromBody] JsonPatchDocument<Book> bookPatch)
         {
             //check entity
-            var entity = ApplicationContext.Books.Find(z => z.Id.Equals(id));
+            var entity = _manager
+                .Book
+                .GetOneBookById(id, true);
+
             if(entity is null)
                 return NotFound(); //404
 
             bookPatch.ApplyTo(entity);
+            _manager.Save();
 
             return NoContent(); //204
         }
