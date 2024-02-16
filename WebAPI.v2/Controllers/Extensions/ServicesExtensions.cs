@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Repositories.Contracts;
 using Repositories.EF_Core;
+using Repositories.EF_Core.Config;
 
 namespace Book_Demo.Controllers.Extensions
 {
@@ -10,9 +11,9 @@ namespace Book_Demo.Controllers.Extensions
             //öncelikle genişletiyorsam o ifadeler this anahtar sözcüğüyle
             IConfiguration configuration) => services.AddDbContext<RepositoryContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("sqlConnection")));
-                //bu bir extension metod
+        //bu bir extension metod
 
         public static void ConfigureRepositoryManager(this IServiceCollection services) =>
-            services.AddScoped<IRepositoryManager>
+            services.AddScoped<IRepositoryManager, RepositoryManager>();
     }
 }
