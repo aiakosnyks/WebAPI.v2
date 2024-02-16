@@ -9,6 +9,6 @@ namespace Repositories.Contracts
     internal interface IRepositoryManager
     {
         IBookRepository Book { get; }
-        void Save()
+        void Save();
     }
 }
